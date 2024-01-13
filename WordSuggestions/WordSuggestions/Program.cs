@@ -1,43 +1,16 @@
 ﻿namespace WordSuggestions
 {
-    internal class Program
+    internal partial class Program
     {
-        private static HashSet<string> GenerateRelated(string input, int editDistance)
+        private static void Main()
         {
-            var outputs = new HashSet<string>();
+            string[] dictionaryWords = File.ReadAllLines(
+                @"C:\Users\brand\Documents\Github\InterestingProblems\WordSuggestions\WordSuggestions\DictionaryWords.txt");
 
-            for (int i = 0; i < input.Length; i++)
+            foreach (var word in dictionaryWords)
             {
-                outputs.Add(input[..i] + input[(i + 1)..]);
+                WordSuggester.AddDictionaryWord(word);
             }
-
-            return outputs;
-        }
-
-        private static void AddWord(ref Dictionary<string, HashSet<string>> map, string word)
-        {
-            var relatedOutputs = GenerateRelated(word, 2);
-            map.Add(word, [word]);
-
-            foreach (var relatedOutput in relatedOutputs)
-            {
-                if (map.TryGetValue(relatedOutput, out HashSet<string>? list))
-                {
-                    list.Add(word);
-                    continue;
-                }
-
-                map.Add(relatedOutput, [word]);
-            }
-        }
-
-        private static void Main(string[] args)
-        {
-            Dictionary<string, HashSet<string>> inputToSuggestion = [];
-
-            AddWord(ref inputToSuggestion, "airport");
-            AddWord(ref inputToSuggestion, "apple");
-            AddWord(ref inputToSuggestion, "fair");
 
             string input = "";
 
@@ -45,33 +18,33 @@
             {
                 var keyInfo = Console.ReadKey();
 
-                if (keyInfo.Key == ConsoleKey.Backspace && input.Length > 0)
-                {
-                    input = input[..(input.Length - 1)];
-                }
-                else
+                if ((keyInfo.KeyChar >= 'a' && keyInfo.KeyChar <= 'z') || (keyInfo.KeyChar >= 'A' && keyInfo.KeyChar <= 'Z'))
                 {
                     input += keyInfo.KeyChar;
+                }
+                if (keyInfo.Key == ConsoleKey.Backspace && input.Length > 0)
+                {
+                    if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
+                    {
+                        input = "";
+                    }
+                    else
+                    {
+                        input = input[..(input.Length - 1)];
+                    }
                 }
 
                 Console.Clear();
                 Console.WriteLine(input);
 
-                HashSet<string> relatedInputs = GenerateRelated(input, editDistance: 2);
-                relatedInputs.Add(input);
+                List<TermInfo>? suggestedTermInfos = WordSuggester.FindSuggestedWords(input);
+               
+                if (suggestedTermInfos == null) continue;
 
-                foreach (var relatedInput in relatedInputs)
+                foreach (var suggestedTermInfo in suggestedTermInfos)
                 {
-                    if (inputToSuggestion.TryGetValue(relatedInput, out HashSet<string>? list))
-                    {
-                        foreach(var word in list)
-                        {
-                            Console.Write($"{word}, ");
-                        }
-                        break;
-                    }
+                    Console.Write($"{suggestedTermInfo.TargetTerm} ({suggestedTermInfo.LevenshteinDistance}), ");
                 }
-
             }
         }
     }
