@@ -7,7 +7,7 @@ namespace WordSuggestions
         private static void Main()
         {
             string[] dictionaryWords = File.ReadAllLines(
-                @"C:\Users\brand\Documents\Github\InterestingProblems\WordSuggestions\WordSuggestions\DictionaryWords.txt");
+                @"C:\Users\brand\Documents\Github\InterestingProblems\WordSuggestions\SharedLibrary\DictionaryWords.txt");
 
             StringBuilder wordBuilder = new();
 

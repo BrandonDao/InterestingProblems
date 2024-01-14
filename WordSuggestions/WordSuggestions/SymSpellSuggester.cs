@@ -5,7 +5,7 @@ namespace WordSuggestions
 {
     public static class SymSpellSuggester
     {
-        private static readonly Dictionary<string, HashSet<string>> termToSuggestedTerm = [];
+        private static readonly Dictionary<string, List<string>> termToSuggestedTerm = [];
         private static readonly Dictionary<string, TermInfo> termInfoByTerm = [];
         private static readonly LRUCache<string, List<TermInfo>> cache = new(capacity: 100);
 
@@ -15,17 +15,18 @@ namespace WordSuggestions
 
             for (int i = 0; i < word.Length; i++)
             {
-                strBuilder
-                    .Append(word[..i])
-                    .Append(word[(i + 1)..]);
+                strBuilder.Append(word);
+                strBuilder.Remove(i, 1);
 
-                if (termToSuggestedTerm.TryGetValue(strBuilder.ToString(), out HashSet<string>? suggestedTerms))
+                string suggestion = strBuilder.ToString();
+
+                if (termToSuggestedTerm.TryGetValue(suggestion, out List<string>? suggestedTerms))
                 {
                     suggestedTerms.Add(word);
                 }
                 else
                 {
-                    termToSuggestedTerm.Add(strBuilder.ToString(), [word]);
+                    termToSuggestedTerm.Add(suggestion, [word]);
                 }
 
                 strBuilder.Clear();
@@ -41,13 +42,14 @@ namespace WordSuggestions
             HashSet<string> outputTerms = new(capacity: input.Length) { input };
 
             for (int i = 0; i < input.Length; i++)
-            {
-                outputTerms.Add(input[..i] + input[(i + 1)..]);
+            { 
+                string variant = input[..i] + input[(i + 1)..];
+                outputTerms.Add(variant);
             }
 
             foreach (var relatedTerm in outputTerms)
             {
-                if(FindSuggestedWordsHelper(relatedTerm, out List<TermInfo>? suggestions))
+                if(FindSuggestedWordsHelper(relatedTerm, input, out List<TermInfo>? suggestions))
                 {
                     cache.Put(input, suggestions!);
                     return suggestions!;
@@ -58,9 +60,9 @@ namespace WordSuggestions
         }
 
 
-        private static bool FindSuggestedWordsHelper(string input, out List<TermInfo>? sortedSuggestions)
+        private static bool FindSuggestedWordsHelper(string relatedTerm, string input, out List<TermInfo>? sortedSuggestions)
         {
-            if (termToSuggestedTerm.TryGetValue(input, out HashSet<string>? suggestedTerms))
+            if (termToSuggestedTerm.TryGetValue(relatedTerm, out List<string>? suggestedTerms))
             {
                 sortedSuggestions = [];
                 foreach (string suggestion in suggestedTerms)
