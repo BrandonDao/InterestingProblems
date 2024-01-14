@@ -1,26 +1,34 @@
+using LRUCache;
+using System.Text;
+
 namespace WordSuggestions
 {
-    public static class WordSuggester
+    public static class SymSpellSuggester
     {
         private static readonly Dictionary<string, HashSet<string>> termToSuggestedTerm = [];
         private static readonly Dictionary<string, TermInfo> termInfoByTerm = [];
-        private static readonly Dictionary<string, List<TermInfo>> cache = [];
+        private static readonly LRUCache<string, List<TermInfo>> cache = new(capacity: 100);
 
-        public static void AddDictionaryWord(string word)
+        public static void AddDictionaryWord(StringBuilder strBuilder, string word)
         {
             termToSuggestedTerm.TryAdd(word, [word]);
-            
+
             for (int i = 0; i < word.Length; i++)
             {
-                string term = word[..i] + word[(i + 1)..];
+                strBuilder
+                    .Append(word[..i])
+                    .Append(word[(i + 1)..]);
 
-                if (termToSuggestedTerm.TryGetValue(term, out HashSet<string>? suggestedTerms))
+                if (termToSuggestedTerm.TryGetValue(strBuilder.ToString(), out HashSet<string>? suggestedTerms))
                 {
                     suggestedTerms.Add(word);
-                    continue;
+                }
+                else
+                {
+                    termToSuggestedTerm.Add(strBuilder.ToString(), [word]);
                 }
 
-                termToSuggestedTerm.Add(term, [word]);
+                strBuilder.Clear();
             }
         }
 
@@ -28,7 +36,7 @@ namespace WordSuggestions
         {
             if (input.Length == 0) return null;
 
-            //if(cache.TryGetValue(input, out List<TermInfo>? cachedSuggestions)) return cachedSuggestions;
+            if(cache.TryGetValue(input, out List<TermInfo>? cachedSuggestions)) return cachedSuggestions;
 
             HashSet<string> outputTerms = new(capacity: input.Length) { input };
 
@@ -41,7 +49,7 @@ namespace WordSuggestions
             {
                 if(FindSuggestedWordsHelper(relatedTerm, out List<TermInfo>? suggestions))
                 {
-                    //cache.Add(input, suggestions);
+                    cache.Put(input, suggestions!);
                     return suggestions!;
                 }
             }

@@ -1,4 +1,6 @@
-﻿namespace WordSuggestions
+﻿using System.Text;
+
+namespace WordSuggestions
 {
     internal partial class Program
     {
@@ -7,12 +9,20 @@
             string[] dictionaryWords = File.ReadAllLines(
                 @"C:\Users\brand\Documents\Github\InterestingProblems\WordSuggestions\WordSuggestions\DictionaryWords.txt");
 
+            StringBuilder wordBuilder = new();
+
+            Console.WriteLine("Loading Dictionary");
+
             foreach (var word in dictionaryWords)
             {
-                WordSuggester.AddDictionaryWord(word);
+                SymSpellSuggester.AddDictionaryWord(wordBuilder, word);
             }
 
+            Console.Clear();
+
             string input = "";
+            Console.WriteLine($"Input:");
+            Console.WriteLine($"Suggestion:");
 
             while (true)
             {
@@ -35,12 +45,13 @@
                 }
 
                 Console.Clear();
-                Console.WriteLine(input);
+                Console.WriteLine($"Input:      {input}");
 
-                List<TermInfo>? suggestedTermInfos = WordSuggester.FindSuggestedWords(input);
+                List<TermInfo>? suggestedTermInfos = SymSpellSuggester.FindSuggestedWords(input);
                
                 if (suggestedTermInfos == null) continue;
 
+                Console.Write("Suggestion: ");
                 foreach (var suggestedTermInfo in suggestedTermInfos)
                 {
                     Console.Write($"{suggestedTermInfo.TargetTerm} ({suggestedTermInfo.LevenshteinDistance}), ");
