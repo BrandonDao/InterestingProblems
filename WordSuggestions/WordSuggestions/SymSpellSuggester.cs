@@ -1,20 +1,43 @@
 using LRUCache;
+using SymSpell;
 using System.Text;
 
 namespace WordSuggestions
 {
     public static class SymSpellSuggester
     {
-        private static readonly Dictionary<string, List<string>> termToSuggestedTerm = [];
-        private static readonly Dictionary<string, TermInfo> termInfoByTerm = [];
+        private static readonly Trie termToSuggestedTerm = new();
         private static readonly LRUCache<string, List<TermInfo>> cache = new(capacity: 100);
 
         public static void AddDictionaryWord(StringBuilder strBuilder, string word)
         {
-            termToSuggestedTerm.TryAdd(word, [word]);
+            //termToSuggestedTerm.TryAdd(word, [word]);
+
+            //for (int i = 0; i < word.Length; i++)
+            //{
+            //    strBuilder.Append(word);
+            //    strBuilder.Remove(i, 1);
+
+            //    string suggestion = strBuilder.ToString();
+
+            //    if (termToSuggestedTerm.TryGetValue(suggestion, out List<string>? suggestedTerms))
+            //    {
+            //        suggestedTerms.Add(word);
+            //    }
+            //    else
+            //    {
+            //        termToSuggestedTerm.Add(suggestion, [word]);
+            //    }
+
+            //    strBuilder.Clear();
+            //}
+
+            termToSuggestedTerm.Insert(word, [word]);
 
             for (int i = 0; i < word.Length; i++)
             {
+                if (word.Length <= 1) return;
+
                 strBuilder.Append(word);
                 strBuilder.Remove(i, 1);
 
@@ -26,7 +49,7 @@ namespace WordSuggestions
                 }
                 else
                 {
-                    termToSuggestedTerm.Add(suggestion, [word]);
+                    termToSuggestedTerm.Insert(suggestion, [word]);
                 }
 
                 strBuilder.Clear();
@@ -67,14 +90,8 @@ namespace WordSuggestions
                 sortedSuggestions = [];
                 foreach (string suggestion in suggestedTerms)
                 {
-                    if (termInfoByTerm.TryGetValue(suggestion, out TermInfo termInfo))
-                    {
-                        sortedSuggestions.Add(termInfo);
-                    }
-                    else
-                    {
-                        sortedSuggestions.Add(new TermInfo(input, suggestion));
-                    }
+                    TermInfo info = new(input, suggestion);
+                    sortedSuggestions.Add(info);
                 }
                 sortedSuggestions.Sort(Comparer<TermInfo>.Create((x, y) => x.LevenshteinDistance.CompareTo(y.LevenshteinDistance)));
 

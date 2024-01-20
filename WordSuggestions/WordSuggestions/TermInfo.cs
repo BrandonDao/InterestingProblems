@@ -1,5 +1,8 @@
-﻿namespace WordSuggestions
+﻿using System.Diagnostics;
+
+namespace WordSuggestions
 {
+    [DebuggerDisplay("{Term,nq} -> {TargetTerm,nq} ({LevenshteinDistance})")]
     public readonly struct TermInfo(string term, string targetTerm)
     {
         public readonly string Term = term;

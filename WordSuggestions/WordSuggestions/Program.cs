@@ -13,6 +13,9 @@ namespace WordSuggestions
 
             Console.WriteLine("Loading Dictionary");
 
+            SymSpellSuggester.AddDictionaryWord(wordBuilder, "airplane");
+
+
             foreach (var word in dictionaryWords)
             {
                 SymSpellSuggester.AddDictionaryWord(wordBuilder, word);
