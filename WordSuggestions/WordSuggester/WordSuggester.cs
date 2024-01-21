@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using LRUCache;
+using System.Text;
+using WordSuggestions;
 
 namespace WordSuggester
 {
@@ -7,67 +9,75 @@ namespace WordSuggester
         public const string Alphabet = "abcdefghijklmnopqrstuvwxyz";
         public HashSet<string> WordDictionary;
 
+        private readonly LRUCache<string, List<TermInfo>> cache;
+
         public WordSuggester(string[] words)
         {
             WordDictionary = [];
-            
-            foreach(var word in words)
+            cache = new LRUCache<string, List<TermInfo>>(capacity: 100);
+
+
+            foreach (var word in words)
             {
                 WordDictionary.Add(word);
             }
         }
 
-        public List<string> GetSuggestions(string input, int maxEditDistance)
+        public List<TermInfo> GetSuggestions(string input, int maxEditDistance, int maxSuggestionCount)
         {
-            List<string> suggestions = new(capacity: (Alphabet.Length << 2) * input.Length + Alphabet.Length - 1);
-            StringBuilder strBuilder = new();
+            if (cache.TryGetValue(input, out List<TermInfo> suggestions)) return suggestions;
+            if (WordDictionary.Contains(input)) return [new TermInfo(input, input)];
 
-            for(int i = 0; i < input.Length; i++)
+            suggestions = [];
+
+            foreach(var word in WordDictionary)
             {
-                string suggestion = strBuilder.Append(input).Remove(i, 1).ToString();
+                if (Math.Abs(input.Length - word.Length) >= maxEditDistance) continue;
 
-                if (WordDictionary.Contains(suggestion)) suggestions.Add(suggestion);
-
-                strBuilder.Clear();
-            }
-
-            for(int i = 0; i < input.Length - 1; i++)
-            {
-                strBuilder.Append(input);
-
-                string temp = strBuilder[i].ToString();
-                strBuilder[i] = strBuilder[i + 1];
-                strBuilder[i + 1] = temp[0];
-
-                string suggestion = strBuilder.ToString();
-
-                if (WordDictionary.Contains(suggestion)) suggestions.Add(suggestion);
-
-                strBuilder.Clear();
-            }
-
-            for(int i = 0; i < input.Length; i++)
-            {
-                for (int alphabetIdx = 0; alphabetIdx < Alphabet.Length; alphabetIdx++)
+                if(WagnerFischerDistance(input, word) < maxEditDistance)
                 {
-                    strBuilder.Append(input)[i] = Alphabet[alphabetIdx];
-                    string suggestion = strBuilder.ToString();
-
-                    if (WordDictionary.Contains(suggestion)) suggestions.Add(suggestion);
-
-                    strBuilder.Clear();
+                    suggestions.Add(new TermInfo(input, word));
                 }
+
+                if (suggestions.Count >= maxSuggestionCount) break;
             }
 
-            for(int i = 0; i < input.Length + 1; i++)
-            {
-                for(int alphabetIdx = 0; alphabetIdx < Alphabet.Length; alphabetIdx++)
-                {
-                    strBuilder.Append(input[])
-                }
-            }
+            suggestions.Sort(Comparer<TermInfo>.Create((x, y) => x.LevenshteinDistance.CompareTo(y.LevenshteinDistance)));
 
+            cache.Put(input, suggestions);
             return suggestions;
+        }
+
+
+        private static int WagnerFischerDistance(string input, string target)
+        {
+            var matrix = new int[input.Length + 1, target.Length + 1];
+
+            matrix[0, 0] = 0;
+
+            for(int c = 1; c < target.Length; c++)
+            {
+                matrix[0, c] = c;
+            }
+            for(int r = 0; r < input.Length; r++)
+            {
+                matrix[r, 0] = r;
+            }
+
+            for(int r = 1; r < input.Length; r++)
+            {
+                for(int c = 1; c < target.Length; c++)
+                {
+                    matrix[r, c] = Math.Min(matrix[r - 1, c], Math.Min(matrix[r - 1, c - 1], matrix[r, c - 1]));
+
+                    if (input[r - 1] != target[c - 1])
+                    {
+                        matrix[r, c]++;
+                    }
+                }
+            }
+
+            return matrix[input.Length - 1, target.Length - 1];
         }
     }
 }

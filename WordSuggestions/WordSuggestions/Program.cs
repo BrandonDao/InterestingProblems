@@ -25,7 +25,6 @@ namespace WordSuggestions
 
             string input = "";
             Console.WriteLine($"Input:");
-            Console.WriteLine($"Suggestion:");
 
             while (true)
             {
