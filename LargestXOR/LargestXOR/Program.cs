@@ -1,90 +1,72 @@
-﻿namespace LargestXOR
-{
-    internal class Program
-    {
-        private static uint LargestXORBad(uint[] inputs)
-        {
-            uint max = 0;
+﻿using System.Diagnostics;
 
-            for (int i = 0; i < inputs.Length; i++)
+namespace LargestXOR
+{
+    internal partial class Program
+    {
+        private static XORInfo LargestXORBad(uint[] inputs)
+        {
+            XORInfo maxInfo = new(inputs[0], inputs[0]);
+
+            for (int i = 1; i < inputs.Length; i++)
             {
                 for (int x = i; x < inputs.Length; x++)
                 {
-                    if ((inputs[i] ^ inputs[x]) > max)
+                    XORInfo currentInfo = new(inputs[i], inputs[x]);
+                    if (currentInfo.Output > maxInfo.Output)
                     {
-                        max = inputs[i] ^ inputs[x];
+                        maxInfo = currentInfo;
                     }
                 }
             }
-            return max;
+            return maxInfo;
         }
 
-        private class Trie()
+        private static XORInfo LargestXORGood(uint[] inputs)
         {
-            public class Node(uint value)
+            SpecializedTrie trie = new();
+            var NOTinputs = new uint[inputs.Length];
+
+            for (int i = 0; i < inputs.Length; i++)
             {
-                public uint Value { get; set; } = value;
-                public Node?[] Children { get; set; } = new Node?[2];
+                NOTinputs[i] = ~inputs[i];
+                trie.Insert(inputs[i]);
             }
 
-            public Node Head { get; set; } = new(uint.MaxValue);
-
-            public void Insert(uint value)
+            XORInfo maxInfo = new(inputs[0], inputs[0]);
+            for (int i = 1; i < NOTinputs.Length; i++)
             {
-                Node current = Head;
+                bool hasFoundExact = trie.TryFindClosest(NOTinputs[i], out uint closest);
 
-                for (int i = 0; i < 32; i++)
+                XORInfo currentInfo = new(inputs[i], closest);
+
+                if (hasFoundExact) return currentInfo;
+
+                if(currentInfo.Output > maxInfo.Output)
                 {
-                    byte bit = (byte)((value & (1 << i)) >> i);
-
-                    current!.Children ??= new Node?[2];
-                    current.Children[bit] ??= new Node(bit);
-
-                    current = current.Children[bit]!;
+                    maxInfo = currentInfo;
                 }
             }
-
+            return maxInfo;
         }
-
-        //private static uint LargestXORBetter(uint[] inputs)
-        //{
-        //    Trie trie = new();
-
-        //    for(int i = 0; i < inputs.Length; i++)
-        //    {
-        //        trie.Insert(inputs[i]);
-        //    }
-
-        //    uint leftValue = 0;
-        //    uint rightValue = 0;
-        //    Trie.Node left = trie.Head;
-        //    Trie.Node right = trie.Head;
-
-        //    for(int i = 0; i < 32; i++)
-        //    {
-        //        if(left.Children.Length == right.Children.Length)
-        //        {
-        //            if(left)
-        //        }
-        //    }
-        //}
 
         private static void Main()
         {
-            Random random = new(12345);
-            var inputs = new uint[] { 2, 5, 7, 9, 14, 11 };
+            Random random = new();
+            var inputs = new uint[50_000];
 
-            Trie trie = new();
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                inputs[i] = (uint)random.Next(0, int.MaxValue);
+            }
 
-            //for(int i = 0; i < inputs.Length; i++)
-            //{
-            //    inputs[i] = (uint)random.Next(0, int.MaxValue);
-            //    trie.Insert(inputs[i]);
-            //}
+            var stopwatch = Stopwatch.StartNew();
 
-            var output = LargestXORBad(inputs);
+            Console.WriteLine(LargestXORGood(inputs) + $" ({stopwatch.ElapsedMilliseconds} ms)");
 
-            ;
+            stopwatch.Restart();
+
+            Console.WriteLine(LargestXORBad(inputs) + $" ({stopwatch.ElapsedMilliseconds} ms)");
         }
     }
 }
