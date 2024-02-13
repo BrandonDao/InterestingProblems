@@ -2,72 +2,64 @@
 {
     internal class Program
     {
-        [Flags]
-        private enum CellType : byte
-        {
-            Pipe = 1,
-            Visited = 2
-        }
-
-
         public static int FindVolume(int[] pipes)
         {
-            int currIdx = 0;
-            int volume = 0;
+            int leftIdx = 0, rightIdx = pipes.Length - 1, leftMaxIdx = 0, rightMaxIdx = 0, volume = 0;
 
-            while (pipes[currIdx] <= pipes[currIdx + 1])
+            bool isCurrentlyLeft = pipes[leftIdx] <= pipes[rightIdx];
+
+            while (rightIdx - leftIdx > 1)
             {
-                if (currIdx + 2 >= pipes.Length) return 0;
-
-                currIdx++;
-            }
-
-            while (currIdx < pipes.Length - 1)
-            {
-                int max = 0;
-                int maxIdx = 0;
-                int sum = 0;
-
-                for (int i = currIdx + 1; i < pipes.Length; i++)
+                if (isCurrentlyLeft)
                 {
-                    if (pipes[i] >= max)
-                    {
-                        maxIdx = i;
-                        max = pipes[maxIdx];
+                    leftIdx++;
 
-                        if (pipes[maxIdx] >= pipes[currIdx] || maxIdx == pipes.Length - 1) break;
+                    if (pipes[leftIdx] >= pipes[leftMaxIdx])
+                    {
+                        leftMaxIdx = leftIdx;
+                        if (pipes[leftMaxIdx] > pipes[rightMaxIdx])
+                        {
+                            isCurrentlyLeft = !isCurrentlyLeft;
+                            continue;
+                        }
                     }
 
-                    sum += pipes[i];
+                    volume += pipes[leftMaxIdx] - pipes[leftIdx];
                 }
-
-                if (maxIdx != currIdx + 1)
+                else
                 {
-                    volume += (maxIdx - currIdx - 1) * Math.Min(pipes[currIdx], pipes[maxIdx]) - sum;
+                    rightIdx--;
+
+                    if (pipes[rightIdx] >= pipes[rightMaxIdx])
+                    {
+                        rightMaxIdx = rightIdx;
+                        if (pipes[rightMaxIdx] > pipes[leftMaxIdx])
+                        {
+                            isCurrentlyLeft = !isCurrentlyLeft;
+                            continue;
+                        }
+                    }
+
+                    volume += pipes[rightMaxIdx] - pipes[rightIdx];
                 }
-
-                currIdx = maxIdx;
             }
-
             return volume;
         }
 
         private static void Main(string[] args)
         {
-            const int n = 4;
-            const int maxHeight = 5;
+            const int n = 10;
+            const int maxHeight = 8;
             var pipes = new int[n];
 
-            //var random = new Random(5834256);
-
-            //for (int i = 0; i < n; i++)
-            //{
-            //    pipes[i] = random.Next(0, maxHeight + 1);
-            //}
-
-            pipes = [4, 2, 3, 1];
+            var random = new Random(3956);
 
             for (int i = 0; i < n; i++)
+            {
+                pipes[i] = random.Next(0, maxHeight + 1);
+            }
+
+            for (int i = 0; i < pipes.Length; i++)
             {
                 for (int j = 0; j < pipes[i]; j++)
                 {
