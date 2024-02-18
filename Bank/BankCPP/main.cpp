@@ -1,4 +1,4 @@
-#include "bank.cpp"
+#include "bankAccount.h"
 #include <iostream>
 
 int main()
