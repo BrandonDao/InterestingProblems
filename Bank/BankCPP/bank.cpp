@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-class Bank
+class BankAccount
 {
 private:
 	class State;
@@ -12,15 +12,19 @@ private:
 
 protected:
 	std::int32_t balanceInternal;
+	std::int32_t getBalanceInternal() inline const { return balanceInternal; }
+	void setBalanceInternal(std::int32_t balance) inline { balanceInternal = balance;  }
 
 public:
 	std::int32_t getBalance() const { return state->getBalance(); }
 
-	Bank()
+	BankAccount()
 	{
 		balanceInternal = 0;
 		state = new UnauthorizedState{ this };
 	}
+
+	~BankAccount() { delete state; }
 
 	void authorize()
 	{
@@ -39,9 +43,9 @@ private:
 	class State
 	{
 	protected:
-		Bank* owner;
+		BankAccount* owner;
 
-		State(Bank* owner) : owner{ owner } { }
+		State(BankAccount* owner) : owner{ owner } { }
 
 	public:
 		virtual int getBalance() const = 0;
@@ -52,30 +56,35 @@ private:
 
 	struct UnauthorizedState : public State
 	{
-		UnauthorizedState(Bank* owner) : State{ owner } { }
+		UnauthorizedState(BankAccount* owner) : State{ owner } { }
 
-		int getBalance() const override { throw std::invalid_argument{ "Unauthorized access of account!" }; }
-		State* authorize() { return new NormalState(owner); }
-		State* deposit(std::uint16_t amount) override { throw std::invalid_argument{ "Unauthorized access of account!" }; }
-		State* withdraw(std::uint16_t amount) override { throw std::invalid_argument{ "Unauthorized access of account!" }; }
+		int getBalance() const override { throw std::runtime_error{ "Unauthorized access of account!" }; }
+		State* authorize()
+		{
+			auto temp = owner;
+			delete this;
+			return new NormalState(temp);
+		}
+		State* deposit(std::uint16_t amount) override { throw std::runtime_error{ "Unauthorized access of account!" }; }
+		State* withdraw(std::uint16_t amount) override { throw std::runtime_error{ "Unauthorized access of account!" }; }
 	};
 
 	struct NormalState : public State
 	{
-		NormalState(Bank* owner) : State{ owner } { }
+		NormalState(BankAccount* owner) : State{ owner } { }
 
-		int getBalance() const override { return owner->balanceInternal; }
+		int getBalance() const override { return owner->getBalanceInternal(); }
 		State* authorize() override { return this; }
 		State* deposit(std::uint16_t amount) override
 		{
-			owner->balanceInternal += amount;
+			owner->setBalanceInternal(owner->getBalanceInternal() + amount);
 			return this;
 		}
 		State* withdraw(std::uint16_t amount) override
 		{
-			owner->balanceInternal -= amount;
+			owner->setBalanceInternal(owner->getBalanceInternal() - amount);
 			
-			if (owner->balanceInternal < 0)
+			if (owner->getBalanceInternal() < 0)
 			{
 				auto temp = new OverdraftedState{owner};
 				delete this;
@@ -87,15 +96,15 @@ private:
 
 	struct OverdraftedState : public State
 	{
-		OverdraftedState(Bank* owner) : State{ owner } { }
+		OverdraftedState(BankAccount* owner) : State{ owner } { }
 
-		int getBalance() const override { return owner->balanceInternal; }
+		int getBalance() const override { return owner->getBalanceInternal(); }
 		State* authorize() { return this; }
 		State* deposit(std::uint16_t amount) override
 		{
-			owner->balanceInternal += amount;
+			owner->setBalanceInternal(owner->getBalanceInternal() + amount);
 
-			if (owner->balanceInternal >= 0)
+			if (owner->getBalanceInternal() >= 0)
 			{
 				auto temp = new NormalState{ owner };
 				delete this;

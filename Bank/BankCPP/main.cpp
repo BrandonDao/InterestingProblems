@@ -3,7 +3,7 @@
 
 int main()
 {
-	Bank bank{};
+	BankAccount bank{};
 
 	bank.authorize();
 	bank.deposit(100);
